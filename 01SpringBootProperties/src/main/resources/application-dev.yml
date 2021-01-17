@@ -1,0 +1,11 @@
+server:
+  port: 8888
+
+my:
+  name: zhangmazi
+  address: BeiJing
+  likes:
+    - 足球
+    - 篮球
+    - 排球
+  likes2: aa,bb,cc
