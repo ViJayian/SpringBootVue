@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    username: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    password: root
+    url: jdbc:mysql:///tb_master
+
+mybatis:
+  #mapper xml配置文件
+  mapper-locations: classpath:mapper/*Mapper.xml
+  #实体类别名
+  type-aliases-package: org.vijayian.entity

@@ -362,9 +362,632 @@ public class LogAspect {
 }
 ```
 
-
-
 - 代码：**[02SpringBootWeb](./02SpringBootWeb)**
+
+## 3.SpringBoot整合持久化技术
+
+### 1.SpringBoot整合JdbcTemplate
+
+1. 引入pom
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.9</version>
+        </dependency>
+    </dependencies>
+```
+
+2. JdbcTemplate自动配置
+
+```
+org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
+```
+
+3. yml配置
+
+```yaml
+spring:
+  datasource:
+    username: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    password: root
+    url: jdbc:mysql:///tb_master
+```
+
+4. JdbcTemplate使用
+
+```java
+/**
+     * 增删改 主要使用：update和batchUpdate
+     * 查询：query和queryForObject
+     * execute 执行任意的sql
+     *
+     * 执行查询时：需要将列和实体进行对应，如果一致，可以直接使用BeanPropertyRowMapper，
+     `不同需要自己实现RowMapper接口
+     */
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    public void addUser(User user) {
+        jdbcTemplate.update("insert into t_user(username,dbsource) values (?,?)", user.getUsername(), user.getDbsource());
+    }
+
+    public void updateUser(User user) {
+        jdbcTemplate.update("update t_user set username = ?,dbsource = ? where id = ?",
+                user.getUsername(), user.getDbsource(), user.getId());
+    }
+
+    public User getUserById(Integer id) {
+        return jdbcTemplate.queryForObject("select * from t_user where id = ?", new BeanPropertyRowMapper<>(User.class), id);
+
+    }
+
+    public void deleteUserById(Integer id) {
+        jdbcTemplate.update("delete from t_user where id = ?", id);
+    }
+
+    public List<User> allUserLists() {
+        return jdbcTemplate.query("select * from t_user", new BeanPropertyRowMapper<>(User.class));
+    }
+```
+
+### 2.SpringBoot整合mybatis
+
+1. pom依赖
+
+```
+<dependencies>
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.9</version>
+        </dependency>
+    </dependencies>
+
+```
+
+2. yml配置文件
+
+- 配置实体类别名，可以简化mapper.xml的配置，实体可以直接写实体名称，不用包含全路径名
+
+```yaml
+spring:
+  datasource:
+    username: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    password: root
+    url: jdbc:mysql:///tb_master
+
+mybatis:
+  #mapper xml配置文件
+  mapper-locations: classpath:mapper/*Mapper.xml
+  #实体类别名
+  type-aliases-package: org.vijayian.entity
+```
+
+3. xml配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.vijayian.mapper.UserMapper">
+
+    <!--int addUser(User user);
+
+    int deleteUserById(Integer id);
+
+    int updateUser(User user);
+
+    User findUserById(Integer id);
+
+    List<User> findAll();-->
+
+    <insert id="addUser" parameterType="org.vijayian.entity.User">
+        insert into t_user(username,dbsource) values (#{username},#{dbsource})
+    </insert>
+
+    <delete id="deleteUserById" parameterType="int">
+        delete from t_user where id = #{id}
+    </delete>
+
+    <update id="updateUser" parameterType="org.vijayian.entity.User">
+        update t_user set username = #{username},dbsource = #{dbsource} where id = #{id}
+    </update>
+
+    <select id="findUserById" resultType="User">
+        select * from t_user where id = #{id}
+    </select>
+
+    <select id="findAll" resultType="org.vijayian.entity.User">
+        select * from t_user
+    </select>
+
+</mapper>
+```
+
+4. mapper接口
+
+```java
+//>> TODO 方式1：在mapper接口上使用@Mapper指定接口是一个mybatis的mapper.
+@Mapper
+public interface UserMapper {
+    int addUser(User user);
+
+    int deleteUserById(Integer id);
+
+    int updateUser(User user);
+
+    User findUserById(Integer id);
+
+    List<User> findAll();
+}
+```
+
+5. 扫描mapper接口
+
+- 在mapper接口使用@Mapper
+- 在启动类配置mapper包扫描@MapperScan
+
+```java
+@SpringBootApplication
+//>> TODO 方式二：使用@MapperScan扫描指定mapper的包，这样就不用在每个类上加@Mapper了.
+//@MapperScan(basePackages = "org.vijayian.mapper")
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+```
+
+### 3.SpringBoot整合SpringData JPA
+
+1. pom
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.9</version>
+        </dependency>
+    </dependencies>
+
+```
+
+2. yml
+
+```yaml
+spring:
+  datasource:
+    username: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    password: root
+    url: jdbc:mysql:///tb_master
+  jpa:
+    show-sql: true
+    database: mysql
+    hibernate:
+      ddl-auto: none
+    #数据库方言
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL57Dialect
+
+```
+
+3. repository
+
+```java
+public interface UserRepository extends JpaRepository<User, Integer> {
+
+}
+```
+
+4. 操作
+
+```
+	@Autowired
+    UserRepository userRepository;
+
+    @Bean
+    ApplicationRunner applicationRunner(){
+        return args -> {
+            User user = new User();
+            user.setUsername("jpa");
+            user.setDbsource("system");
+            userRepository.save(user);
+
+            userRepository.deleteById(1);
+
+            User u = userRepository.findById(2).orElseThrow(NullPointerException::new);
+            u.setUsername("jpa update");
+            userRepository.save(u);
+            System.out.println(u);
+
+            List<User> all = userRepository.findAll();
+            System.out.println(all);
+        };
+    }
+```
+
+### 4.多数据源配置
+
+#### 1.jdbcTemplate多数据源配置
+
+1. pom
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+            <version>1.1.10</version>
+        </dependency>
+    </dependencies>
+```
+
+2. 配置多数据源
+
+```java
+@Configuration
+public class DataSourceConfig {
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.one")
+    DataSource dataSourceOne(){
+        return DruidDataSourceBuilder.create().build();
+    }
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.two")
+    DataSource dataSourceTwo(){
+        return DruidDataSourceBuilder.create().build();
+    }
+}
+```
+
+3. 配置多jdbcTemplate
+
+```java
+@Configuration
+public class JdbcTemplateConfig {
+    @Bean
+    JdbcTemplate jdbcTemplateOne(DataSource dataSourceOne) {
+        return new JdbcTemplate(dataSourceOne);
+    }
+
+    @Bean
+    JdbcTemplate jdbcTemplateTwo(DataSource dataSourceTwo) {
+        return new JdbcTemplate(dataSourceTwo);
+    }
+
+}
+```
+
+4. use
+
+```java
+@Autowired
+    JdbcTemplate jdbcTemplateOne;
+
+    @Autowired
+    JdbcTemplate jdbcTemplateTwo;
+
+    @Bean
+    public ApplicationRunner applicationRunner() {
+        return args -> {
+            jdbcTemplateOne.update("insert into t_user(username,dbsource) values (?,?)", "one", "one");
+            jdbcTemplateTwo.update("insert into t_user(username,dbsource) values (?,?)", "two", "two");
+        };
+    }
+```
+
+#### 2.mybatis多数据源
+
+1. pom文件
+
+```xml
+<dependencies>
+        <!--mybatis多数据源-->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+            <version>1.1.10</version>
+        </dependency>
+    </dependencies>
+```
+
+2. mybatis config
+
+需要手工配置xml的路径，自定义了sqlsessionFactory，yml中的配置是不生效的
+
+```java
+@Configuration
+public class MybatisConfig {
+
+    @Configuration
+    @MapperScan(value = "org.vijayian.mapper1", sqlSessionFactoryRef = "sqlSessionFactoryBean1",
+            sqlSessionTemplateRef = "sqlSessionTemplate1")
+    static class MybatisConfigOne {
+        @Autowired
+        DataSource dataSourceOne;
+
+        @Bean
+        SqlSessionFactory sqlSessionFactoryBean1() throws Exception {
+            SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
+            bean.setDataSource(dataSourceOne);
+            bean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath:mapper1/*Mapper*.xml"));
+            return bean.getObject();
+        }
+
+        //>> TODO 线程安全类，用来管理Mybatis的SqlSession操作.
+        @Bean
+        SqlSessionTemplate sqlSessionTemplate1() throws Exception {
+            return new SqlSessionTemplate(sqlSessionFactoryBean1());
+        }
+    }
+
+    @Configuration
+    @MapperScan(value = "org.vijayian.mapper2", sqlSessionFactoryRef = "sqlSessionFactoryBean2",
+            sqlSessionTemplateRef = "sqlSessionTemplate2")
+    static class MybatisConfigTwo {
+        @Autowired
+        DataSource dataSourceTwo;
+
+        @Bean
+        SqlSessionFactory sqlSessionFactoryBean2() throws Exception {
+            SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
+            bean.setDataSource(dataSourceTwo);
+            bean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath:mapper2/*Mapper*.xml"));
+            return bean.getObject();
+        }
+
+        @Bean
+        SqlSessionTemplate sqlSessionTemplate2() throws Exception {
+            return new SqlSessionTemplate(sqlSessionFactoryBean2());
+        }
+    }
+}
+
+```
+
+3. yml
+
+```yaml
+spring:
+  datasource:
+    one:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_master
+    two:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_slave
+
+mybatis:
+  #mapper xml配置文件
+  mapper-locations: classpath:mapper1/*Mapper*.xml,classpath:mapper2/*Mapper*.xml
+  #实体类别名
+  type-aliases-package: org.vijayian.entity
+```
+
+#### 3.jpa多数据源配置
+
+1. pom文件
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+            <version>1.1.10</version>
+        </dependency>
+    </dependencies>
+```
+
+2. yml文件
+
+```yaml
+spring:
+  datasource:
+    one:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_master
+    two:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_slave
+
+  jpa:
+    #数据库方言
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL57Dialect
+        ddl-auto: none
+      database: mysql
+      show-sql: true
+```
+
+3. 配置文件，多数据源要使用@Primary，否则hibernate自动配置会失效（因为@ConditionalOnSingleCandidate注解）
+
+```java
+@Configuration
+public class DataSourceConfig {
+
+    @Bean
+    @Primary
+    @ConfigurationProperties("spring.datasource.one")
+    DataSource dataSourceOne(){
+        return DruidDataSourceBuilder.create().build();
+    }
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.two")
+    DataSource dataSourceTwo(){
+        return DruidDataSourceBuilder.create().build();
+    }
+}
+```
+
+
+
+```java
+@Configuration
+@EnableTransactionManagement
+public class JpaConfig {
+
+    /**
+     * 启动时 EntityManagerFactoryBuilder bean没有注入，在这个类上alt+F7看到初始化这个类是在HibernateJpaConfiguration类
+     *
+     * @Configuration
+     * @ConditionalOnSingleCandidate(DataSource.class)
+     * class HibernateJpaConfiguration extends JpaBaseConfiguration
+     *
+     * @ConditionalOnSingleCandidate 意思是当前DataSource在容器中只有一个，或者说在容器中有多个，但是有首选的一个
+     * 因此配置DataSource多数据源时要添加@Primary
+     *
+     */
+    @Configuration
+    @EnableJpaRepositories(basePackages = "org.vijayian.repository1",entityManagerFactoryRef = "entityManagerFactoryBeanOne",transactionManagerRef = "platformTransactionManagerOne")
+    static class JpaConfigOne {
+        @Resource(name = "dataSourceOne")
+        DataSource dataSourceOne;
+
+        @Autowired
+        JpaProperties jpaProperties;
+
+        @Bean
+        @Primary
+        LocalContainerEntityManagerFactoryBean entityManagerFactoryBeanOne(EntityManagerFactoryBuilder builder) {
+            return builder.dataSource(dataSourceOne)
+                    .properties(jpaProperties.getProperties())
+                    .packages("org.vijayian.entity")
+                    .persistenceUnit("pu1")
+                    .build();
+        }
+
+        @Bean
+        PlatformTransactionManager platformTransactionManagerOne(EntityManagerFactoryBuilder builder){
+            LocalContainerEntityManagerFactoryBean bean = entityManagerFactoryBeanOne(builder);
+            return new JpaTransactionManager(bean.getObject());
+        }
+    }
+
+    @Configuration
+    @EnableJpaRepositories(basePackages = "org.vijayian.repository2",entityManagerFactoryRef = "entityManagerFactoryBeanTwo",transactionManagerRef = "platformTransactionManagerTwo")
+    static class JpaConfigTwo {
+        @Resource(name = "dataSourceTwo")
+        DataSource dataSourceTwo;
+
+        @Autowired
+        JpaProperties jpaProperties;
+
+        @Bean
+        LocalContainerEntityManagerFactoryBean entityManagerFactoryBeanTwo(EntityManagerFactoryBuilder builder) {
+            return builder.dataSource(dataSourceTwo)
+                    .properties(jpaProperties.getProperties())
+                    .packages("org.vijayian.entity")
+                    .persistenceUnit("pu2")
+                    .build();
+        }
+
+        @Bean
+        PlatformTransactionManager platformTransactionManagerTwo(EntityManagerFactoryBuilder builder){
+            LocalContainerEntityManagerFactoryBean bean = entityManagerFactoryBeanTwo(builder);
+            return new JpaTransactionManager(bean.getObject());
+        }
+    }
+}
+
+```
+
+
+
+
 
 
 

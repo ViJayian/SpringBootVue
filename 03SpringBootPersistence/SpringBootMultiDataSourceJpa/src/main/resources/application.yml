@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    one:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_master
+    two:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_slave
+
+  jpa:
+    #数据库方言
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL57Dialect
+        ddl-auto: none
+      database: mysql
+      show-sql: true

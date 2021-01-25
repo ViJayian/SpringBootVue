@@ -11,6 +11,7 @@
     <modules>
         <module>01SpringBootProperties</module>
         <module>02SpringBootWeb</module>
+        <module>03SpringBootPersistence</module>
     </modules>
 
     <parent>

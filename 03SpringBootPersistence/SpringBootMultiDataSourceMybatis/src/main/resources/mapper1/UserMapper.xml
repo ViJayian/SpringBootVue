@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.vijayian.mapper1.UserMapper">
+
+    <!--int addUser(User user);
+
+    int deleteUserById(Integer id);
+
+    int updateUser(User user);
+
+    User findUserById(Integer id);
+
+    List<User> findAll();-->
+
+    <insert id="addUser" parameterType="org.vijayian.entity.User">
+        insert into t_user(username,dbsource) values (#{username},#{dbsource})
+    </insert>
+
+    <delete id="deleteUserById" parameterType="int">
+        delete from t_user where id = #{id}
+    </delete>
+
+    <update id="updateUser" parameterType="org.vijayian.entity.User">
+        update t_user set username = #{username},dbsource = #{dbsource} where id = #{id}
+    </update>
+
+    <select id="findUserById" resultType="org.vijayian.entity.User">
+        select * from t_user where id = #{id}
+    </select>
+
+    <select id="findAll" resultType="org.vijayian.entity.User">
+        select * from t_user
+    </select>
+
+</mapper>

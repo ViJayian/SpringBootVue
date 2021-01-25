@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    one:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_master
+    two:
+      username: root
+      type: com.alibaba.druid.pool.DruidDataSource
+      password: root
+      url: jdbc:mysql:///tb_slave
