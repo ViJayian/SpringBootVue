@@ -12,6 +12,10 @@
         <module>01SpringBootProperties</module>
         <module>02SpringBootWeb</module>
         <module>03SpringBootPersistence</module>
+        <module>04SpringBootNoSql</module>
+        <module>05SpringBootDevtoolsAndJunitTest</module>
+        <module>06SpringBootWebSocket</module>
+        <module>07SpringBootMessage</module>
     </modules>
 
     <parent>

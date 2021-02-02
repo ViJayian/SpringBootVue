@@ -1,0 +1,8 @@
+spring:
+  activemq:
+    broker-url: tcp://localhost:61616
+    #信任所有包
+    packages:
+      trust-all: true
+    user: admin
+    password: admin

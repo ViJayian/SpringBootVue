@@ -985,9 +985,247 @@ public class JpaConfig {
 
 ```
 
+## 4.SpringBoot整合NoSql
+
+### 1.整合redis
+
+#### 1.docker安装redis
+
+参考： https://www.runoob.com/docker/docker-install-redis.html 
+
+```
+docker pull redis:latest
+docker run -itd --name redis-test -p 6379:6379 redis
+docker exec -it redis-test /bin/bash
+redis-cli
+```
+
+#### 2.SpringBoot整合redis
+
+1. pom文件
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <!--默认使用lettuce，使用jedis需要排除-->
+            <exclusions>
+                <exclusion>
+                    <artifactId>lettuce-core</artifactId>
+                    <groupId>io.lettuce</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+2. yml配置
+
+```yaml
+spring:
+  redis:
+    database: 0
+    host: localhost
+    port: 6379
+    jedis:
+      pool:
+        #最大连接数
+        max-active: 8
+        #最大空闲连接数
+        max-idle: 8
+        #最大阻塞等待时间，-1表示没有限制
+        max-wait: -1ms
+        #最小空闲连接
+        min-idle: 0
+```
+
+### 2.整合mongodb
+
+### 3.HttpSession实现session共享
 
 
 
+## 5.SpringBoot使用websocket
+
+1. pom
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <!--前端支持-->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>webjars-locator-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>sockjs-client</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>stomp-websocket</artifactId>
+            <version>2.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.3.1</version>
+        </dependency>
+    </dependencies>
+```
+
+2. websocket配置
+
+```java
+@Configuration
+//>> TODO 开启WebSocket消息代理.
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        //>> TODO 设置消息代理的前缀,会将消息转发给消息代理broker，再由消息代理将消息广播给连接的客户端.
+        registry.enableSimpleBroker("/topic");
+        //>> TODO 通过设置前缀，过滤需要被注解处理的消息 @MessageMapping ，而其他的交给broker处理.
+        registry.setApplicationDestinationPrefixes("/app");
+    }
+
+    //>> TODO 开启sockjs支持，客户端通过配置的URL建立连接.
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/chat").withSockJS();
+    }
+}
+```
+
+## 6.消息服务
+
+### 1.JMS
+
+#### 1.docker安装activemq
+
+参考： https://www.cnblogs.com/liyiran/p/11523319.html 
+
+```
+docker run -d --name activemq -p 61616:61616 -p 8161:8161 webcenter/activemq
+```
+
+#### 2.springboot集成activemq
+
+1. pom文件
+
+```xml
+ <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-activemq</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+2. 代码实现
+
+```java
+@Component
+public class JmsComponent {
+
+    @Autowired
+    JmsMessagingTemplate jmsMessagingTemplate;
+
+    @Autowired
+    Queue queue;
+
+    //发送消息，指定队列
+    public void send(Message message) {
+        jmsMessagingTemplate.convertAndSend(this.queue, message);
+    }
+    
+	//消息监听
+    @JmsListener(destination = "amq")
+    public void receive(Message msg) {
+        System.out.println("receive: " + msg);
+    }
+}
+
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    Queue queue() {
+        return new ActiveMQQueue("amq");
+    }
+
+    @Autowired
+    JmsComponent jmsComponent;
+
+    @Bean
+    ApplicationRunner runner() {
+        return args -> {
+            Message message = new Message();
+            message.setName("amq message");
+            message.setContent("amq content");
+            jmsComponent.send(message);
+        };
+    }
+}
+
+```
+
+### 2.AMQP
+
+#### 1.docker安装rabbitmq
+
+```
+docker run -dit --name Myrabbitmq -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin -p 15672:15672 -p 5672:5672 rabbitmq:management
+```
+
+#### 2.集成rabbitmq
+
+1. pom文件
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+2. yaml文件
+
+```yaml
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+```
+
+3. ExchangeType
+
+- direct
+- fanout
+- topic
+- header
 
 
 
