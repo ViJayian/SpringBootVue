@@ -17,6 +17,6 @@ public class Application {
         SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
         builder.application().setAdditionalProfiles("dev");
         builder.run(args);
-        SpringApplication.run(Application.class, args);
+//        SpringApplication.run(Application.class, args);
     }
 }
