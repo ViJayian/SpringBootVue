@@ -1,6 +1,5 @@
 server:
-  port: 8999
-
+  port: 8889
 
 my:
   name: zhangmazi
@@ -10,6 +9,3 @@ my:
     - 篮球
     - 排球
   likes2: aa,bb,cc
-spring:
-  profiles:
-    active: @active@
